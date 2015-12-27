@@ -1,0 +1,115 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Shujuan Huang"
+date: "Sunday, December 27, 2015"
+output: html_document
+---
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+## Data 
+
+
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. 
+
+###Reproduceability
+
+An overall pseudo-random number generator seed was set at 50 for all code. In order to reproduce the results below, the same seed should be used.Different packages were downloaded and installed, such as caret and randomForest. 
+
+
+###Step 1: Load the data
+
+```{r, echo=TRUE}
+library(caret)
+library(randomForest)
+setwd("C:/Users/shujuan/Desktop/coursera/practical machine learning/project")
+train <- read.csv('pml-training.csv',na.strings=c("NA","","#DIV/0!"))
+test <- read.csv('pml-testing.csv',na.strings=c("NA","","#DIV/0!"))
+dim(train)
+dim(test)
+#str(train)
+```
+
+
+###Step 2: Spliting the data into training and validation data sets
+
+```{r, echo=TRUE}
+set.seed(1111)
+# Taking 70% for the training data and 30% for the validation data
+inTrain <- createDataPartition(y = train$classe, list = FALSE, p=0.7)
+train2 <- train[inTrain,]
+validation <- train[-inTrain,]
+```
+
+###Step 3: Delete columns with all missing values
+
+```{r, echo=TRUE}
+train2<-train2[,colSums(is.na(train2)) == 0]
+validation<-validation[,colSums(is.na(validation)) == 0]
+dim(train)
+dim(train2)
+dim(validation)
+```
+
+###Step 4: Remove variables that are irrelavant to our project, such as user name,raw_timestamp_part_1,raw_timestamp_part_2
+```{r, echo=TRUE}
+#names(train2)
+train2   <-train2[,-c(2:7)]
+validation <-validation[,-c(2:7)]
+names(train2)
+```
+
+
+
+## Model
+
+###Response Variable:  classe
+
+It is a factor variable with 5 levels. For this data set, "participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in 5 different fashions:
+
+- exactly according to the specification (Class A)
+- throwing the elbows to the front (Class B)
+- lifting the dumbbell only halfway (Class C)
+- lowering the dumbbell only halfway (Class D)
+- throwing the hips to the front (Class E)
+```{r, echo=TRUE}
+par(mfrow=c(1,1))
+plot(train2$classe, col="light blue", main="Variable classe within the training data", xlab="classe levels", ylab="Frequency")
+```
+### Algorithm: Random Forest
+
+```{r, echo=TRUE}
+#Random Forest Model
+model_RF <- randomForest(classe ~. , data=train2, method="class")
+
+# Predicting on validation dataset 
+prediction1 <- predict(model_RF, validation, type = "class")
+
+# Test results on validation dataset
+confusionMatrix(prediction1, validation$classe)
+
+# Display the final model: Variable Importance
+varImp(model_RF)
+```
+
+### Conclusion
+
+## Prediction on Testing Datasets
+
+```{r, echo=TRUE}
+test<-test[,colSums(is.na(test)) == 0]
+test  <-test[,-c(2:7)]
+# names(test)
+# head(test)
+# predict outcome levels on Testing data set using Random Forest algorithm
+final <- predict(model_RF, test, type="class")
+final
+```
