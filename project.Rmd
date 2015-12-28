@@ -39,7 +39,22 @@ dim(test)
 ```
 
 
-###Step 2: Spliting the data into training and validation data sets
+###Step 2: Delete columns with all missing values
+
+```{r, echo=TRUE}
+train<-train[,colSums(is.na(train)) == 0]
+test<-test[,colSums(is.na(test)) == 0]
+```
+
+###Step 3: Remove variables that are irrelavant to our project, such as user name,raw_timestamp_part_1,raw_timestamp_part_2
+```{r, echo=TRUE}
+#names(train2)
+train   <-train[,-c(1:7)]
+test <-test[,-c(1:7)]
+names(train)
+```
+
+###Step 4: Spliting the data into training and validation data sets
 
 ```{r, echo=TRUE}
 set.seed(1111)
@@ -48,26 +63,6 @@ inTrain <- createDataPartition(y = train$classe, list = FALSE, p=0.7)
 train2 <- train[inTrain,]
 validation <- train[-inTrain,]
 ```
-
-###Step 3: Delete columns with all missing values
-
-```{r, echo=TRUE}
-train2<-train2[,colSums(is.na(train2)) == 0]
-validation<-validation[,colSums(is.na(validation)) == 0]
-dim(train)
-dim(train2)
-dim(validation)
-```
-
-###Step 4: Remove variables that are irrelavant to our project, such as user name,raw_timestamp_part_1,raw_timestamp_part_2
-```{r, echo=TRUE}
-#names(train2)
-train2   <-train2[,-c(2:7)]
-validation <-validation[,-c(2:7)]
-names(train2)
-```
-
-
 
 ## Model
 
@@ -80,20 +75,26 @@ It is a factor variable with 5 levels. For this data set, "participants were ask
 - lifting the dumbbell only halfway (Class C)
 - lowering the dumbbell only halfway (Class D)
 - throwing the hips to the front (Class E)
+
 ```{r, echo=TRUE}
 par(mfrow=c(1,1))
 plot(train2$classe, col="light blue", main="Variable classe within the training data", xlab="classe levels", ylab="Frequency")
 ```
-### Algorithm: Random Forest
+
+###Algorithm: Random Forest
 
 ```{r, echo=TRUE}
 #Random Forest Model
 model_RF <- randomForest(classe ~. , data=train2, method="class")
 
+# Test results on validation dataset: In sample
+prediction2 <- predict(model_RF, train2, type = "class")
+confusionMatrix(prediction2, train2$classe)
+
 # Predicting on validation dataset 
 prediction1 <- predict(model_RF, validation, type = "class")
 
-# Test results on validation dataset
+# Test results on validation dataset: Out of sample
 confusionMatrix(prediction1, validation$classe)
 
 # Display the final model: Variable Importance
@@ -102,14 +103,15 @@ varImp(model_RF)
 
 ### Conclusion
 
+Based on the results, the in sample accuracy of the model is 100%, which is excellent. The out-of-sample accuracy is 99.61%, which is lower than the in sample accuracy as we expected.
+
 ## Prediction on Testing Datasets
 
 ```{r, echo=TRUE}
-test<-test[,colSums(is.na(test)) == 0]
-test  <-test[,-c(2:7)]
 # names(test)
 # head(test)
 # predict outcome levels on Testing data set using Random Forest algorithm
 final <- predict(model_RF, test, type="class")
 final
+
 ```
